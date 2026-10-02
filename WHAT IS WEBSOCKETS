@@ -1,0 +1,252 @@
+We use **WebSockets when we want continuous, real-time communication between a browser and a server**.
+
+For your kind of project, this is actually very useful.
+
+### Normal HTTP vs WebSocket
+
+**HTTP:**
+
+```text
+Browser ──────> Server
+        "Any new data?"
+
+Browser <────── Server
+        "No"
+
+Browser ──────> Server
+        "Any new data?"
+
+Browser <────── Server
+        "Temperature = 42"
+```
+
+The browser has to keep asking.
+
+With **WebSocket**:
+
+```text
+Browser <══════════════════> Server
+          ONE OPEN CONNECTION
+
+Server ──────> Temperature = 42
+Server ──────> Temperature = 43
+Server ──────> Temperature = 44
+Server ──────> Temperature = 45
+```
+
+The server can **push data whenever it changes**.
+
+---
+
+## Why this matters for your Three.js project
+
+Imagine your setup:
+
+```text
+       PHYSICAL WORLD
+           
+ESP32 → Flow Sensor
+  │
+  │ Wi-Fi
+  ▼
+Flask / Python
+  │
+  │ WebSocket
+  ▼
+JavaScript
+  │
+  ▼
+Three.js
+  │
+  ▼
+3D Digital Twin
+```
+
+Suppose the ESP32 measures:
+
+```text
+Flow = 10 L/min
+```
+
+Your 3D pipeline might show normal flow.
+
+Then suddenly:
+
+```text
+Flow = 2 L/min
+```
+
+Flask can immediately send:
+
+```json
+{
+  "flow": 2,
+  "status": "LEAK"
+}
+```
+
+to the browser through the WebSocket.
+
+Three.js receives it and could immediately:
+
+```text
+        3D PIPELINE
+
+████████████████
+       ↓
+   🔴 LEAK
+       ↓
+████████████████
+
+Flow: 2 L/min
+Status: LEAK
+```
+
+No page refresh. No repeated requests.
+
+---
+
+# Why not just use HTTP?
+
+You **can** use HTTP.
+
+For example:
+
+```text
+ESP32
+  ↓
+HTTP POST
+  ↓
+Flask
+  ↓
+Browser asks every 1 second
+  ↓
+GET /data
+```
+
+This is called **polling**.
+
+For a small project, polling is actually perfectly fine.
+
+But imagine:
+
+```text
+100 sensors
+10 updates/second
+multiple dashboards
+real-time 3D visualization
+```
+
+Constantly asking:
+
+> "Anything new?"
+
+becomes inefficient.
+
+WebSocket gives you a persistent communication channel.
+
+---
+
+# Simple analogy
+
+### HTTP
+
+📞
+
+You call your friend:
+
+> "Anything new?"
+
+Friend:
+
+> "No."
+
+10 seconds later:
+
+> "Anything new?"
+
+> "No."
+
+10 seconds later:
+
+> "Temperature increased."
+
+😂
+
+### WebSocket
+
+📞 **Call stays open.**
+
+Friend says:
+
+> "Temperature increased."
+
+You immediately hear it.
+
+Then:
+
+> "Pressure dropped."
+
+You immediately hear that too.
+
+---
+
+# WebSocket is NOT a replacement for everything
+
+This is important.
+
+Use normal HTTP when you have something like:
+
+```text
+Browser → GET machine information
+Browser → POST login
+Browser → Upload file
+Browser → Request report
+```
+
+Use WebSocket when you need:
+
+```text
+LIVE SENSOR DATA
+LIVE CHAT
+LIVE NOTIFICATIONS
+LIVE DASHBOARDS
+LIVE GAME STATE
+REAL-TIME CONTROL
+```
+
+For your **ESP32 + Flask + Three.js digital twin**, WebSockets become particularly useful once you want **live sensor updates and live machine-state animation**.
+
+### Your eventual architecture
+
+```text
+       ESP32
+         │
+         │ sensor data
+         ▼
+    Python / Flask
+         │
+         │ WebSocket
+         ▼
+    JavaScript
+         │
+         ▼
+      Three.js
+         │
+         ▼
+   ┌─────────────┐
+   │  3D PUMP    │
+   │             │
+   │     ⚙️      │
+   │             │
+   └─────────────┘
+      │       │
+   Flow     Pressure
+   12 L/m    3.2 bar
+```
+
+And here's the key idea:
+
+**WebSocket is the communication pipe. Three.js is the visualization.**
+
+They solve completely different problems.
